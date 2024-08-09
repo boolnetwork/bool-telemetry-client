@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use log::{debug, error, info};
+use log::{debug, error, info, trace};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -8,7 +8,7 @@ use std::sync::RwLock;
 use std::time::Duration;
 
 lazy_static! {
-    static ref DEVICE_STATUS: RwLock<DeviceStatus> = RwLock::new(DeviceStatus::default());
+    static ref DEVICE_STATUS: RwLock<DeviceStatus> = RwLock::new(DeviceStatus::new());
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -27,17 +27,27 @@ struct JsonRpcResponse {
     id: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct SaveDataParams {
-    key: String,
-    value: String,
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 struct DeviceStatus {
     device_id: String,
+    device_owner: String,
+    device_version: String,
+    peer_id: String,
     #[serde(default)]
     peers_count: u32,
+    best_block_number: u32,
+    finalized_block_number: u32,
+    upload_bandwidth: Vec<u64>,
+    download_bandwidth: Vec<u64>,
+}
+
+impl DeviceStatus {
+    fn new() -> Self {
+        let mut device_status = Self::default();
+        device_status.upload_bandwidth = vec![0; 30];
+        device_status.download_bandwidth = vec![0; 30];
+        device_status
+    }
 }
 
 async fn update_status(
@@ -83,13 +93,36 @@ async fn get_status(client: &Client, url: &str) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn start_calculate_bandwidth() {
+    {
+        let mut device = DEVICE_STATUS.write().unwrap();
+        device.upload_bandwidth.pop();
+        device.upload_bandwidth.push(0);
+        device.download_bandwidth.pop();
+        device.download_bandwidth.push(0);
+    }
+
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(60));
+        loop {
+            interval.tick().await;
+            let mut device = DEVICE_STATUS.write().unwrap();
+            device.upload_bandwidth.remove(0);
+            device.upload_bandwidth.push(0);
+            device.download_bandwidth.remove(0);
+            device.download_bandwidth.push(0);
+        }
+    });
+}
+
 pub async fn start_update_status(url: &str, interval: u64) {
+    start_calculate_bandwidth();
     let mut interval = tokio::time::interval(Duration::from_secs(interval));
     let client = Client::new();
     loop {
         interval.tick().await;
         let device = DEVICE_STATUS.read().unwrap().clone();
-        if !device.device_id.is_empty() {
+        if !device.device_id.is_empty() && !device.device_owner.is_empty() {
             if let Err(_) = update_status(&client, url, &device).await {
                 error!("update status to telemetry failed");
             }
@@ -103,8 +136,42 @@ pub fn set_device_id(device_id: String) {
     DEVICE_STATUS.write().unwrap().device_id = device_id;
 }
 
+pub fn set_device_owner(device_owner: String) {
+    DEVICE_STATUS.write().unwrap().device_owner = device_owner;
+}
+
+pub fn set_device_version(version: String) {
+    DEVICE_STATUS.write().unwrap().device_version = version;
+}
+
+pub fn set_peer_id(peer_id: String) {
+    DEVICE_STATUS.write().unwrap().peer_id = peer_id;
+}
+
 pub fn set_peers_count(peers_count: u32) {
     DEVICE_STATUS.write().unwrap().peers_count = peers_count;
+}
+
+pub fn set_best_block_number(block_number: u32) {
+    DEVICE_STATUS.write().unwrap().best_block_number = block_number;
+}
+
+pub fn set_finalized_block_number(block_number: u32) {
+    DEVICE_STATUS.write().unwrap().finalized_block_number = block_number;
+}
+
+pub fn add_upload(n: u64) {
+    let mut device_status = DEVICE_STATUS.write().unwrap();
+    if let Some(old) = device_status.upload_bandwidth.pop() {
+        device_status.upload_bandwidth.push(old + n);
+    }
+}
+
+pub fn add_download(n: u64) {
+    let mut device_status = DEVICE_STATUS.write().unwrap();
+    if let Some(old) = device_status.download_bandwidth.pop() {
+        device_status.download_bandwidth.push(old + n);
+    }
 }
 
 #[cfg(test)]
@@ -125,25 +192,34 @@ mod tests {
             let url = "http://127.0.0.1:3030";
             let interval = 1;
 
+            add_upload(100);
+            add_download(1000);
             tokio::spawn(async move { start_update_status(url, interval).await });
 
             let client = Client::new();
 
             let mut interval = tokio::time::interval(Duration::from_secs(1));
-            for i in 0..100 {
+            for i in 0..1000 {
                 interval.tick().await;
 
                 if i < 3 {
                     continue;
                 }
 
-                if i % 5 == 0 {
+                if i == 5 {
                     let random_u128: u128 = random();
                     let device_id = format!("0x{:064x}", random_u128);
                     set_device_id(device_id);
+                    set_device_version("0.11.19".to_string());
                 }
 
+                let random_u128: u128 = random();
+                let device_owner = format!("0x{:040x}", random_u128);
+                set_device_owner(device_owner);
+
                 set_peers_count(random());
+                add_upload(1);
+                add_download(1);
 
                 // Get data
                 let _ = get_status(&client, url).await;
