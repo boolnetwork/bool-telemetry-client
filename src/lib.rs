@@ -1,5 +1,5 @@
 use lazy_static::lazy_static;
-use log::{debug, error, info, trace};
+use log::{debug, error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
