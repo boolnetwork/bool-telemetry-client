@@ -122,7 +122,9 @@ pub async fn start_update_status(url: &str, interval: u64) {
     loop {
         interval.tick().await;
         let device = DEVICE_STATUS.read().unwrap().clone();
-        if !device.device_id.is_empty() && !device.device_owner.is_empty() {
+        if !device.device_id.is_empty() && !device.device_owner.is_empty()
+        && !device.peer_id.is_empty()
+            {
             if let Err(e) = update_status(&client, url, &device).await {
                 debug!("update status to telemetry failed with error: {}",e);
                 error!("update status to telemetry failed");
