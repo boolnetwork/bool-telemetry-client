@@ -118,7 +118,7 @@ fn start_calculate_bandwidth() {
 pub async fn start_update_status(url: &str, interval: u64) {
     start_calculate_bandwidth();
     let mut interval = tokio::time::interval(Duration::from_secs(interval));
-    let client = Client::new();
+    let client = Client::builder().timeout(Duration::from_secs(30)).build().unwrap();
     loop {
         interval.tick().await;
         let device = DEVICE_STATUS.read().unwrap().clone();
