@@ -39,6 +39,7 @@ struct DeviceStatus {
     finalized_block_number: u32,
     upload_bandwidth: Vec<u64>,
     download_bandwidth: Vec<u64>,
+    uptime: u64
 }
 
 impl DeviceStatus {
@@ -161,6 +162,10 @@ pub fn set_best_block_number(block_number: u32) {
 
 pub fn set_finalized_block_number(block_number: u32) {
     DEVICE_STATUS.write().unwrap().finalized_block_number = block_number;
+}
+
+pub fn set_uptime(uptime: u64) {
+    DEVICE_STATUS.write().unwrap().uptime = uptime;
 }
 
 pub fn add_upload(n: u64) {
