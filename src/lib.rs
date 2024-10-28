@@ -39,7 +39,9 @@ struct DeviceStatus {
     finalized_block_number: u32,
     upload_bandwidth: Vec<u64>,
     download_bandwidth: Vec<u64>,
-    uptime: i64
+    uptime: i64,
+    monitor_type: u8,
+    monitor_sync_chains: Vec<(u32, u32)>,
 }
 
 impl DeviceStatus {
@@ -166,6 +168,11 @@ pub fn set_finalized_block_number(block_number: u32) {
 
 pub fn set_uptime(uptime: i64) {
     DEVICE_STATUS.write().unwrap().uptime = uptime;
+}
+
+pub fn set_monitor_sync_status(ty: u8, chains: Vec<(u32, u32)>) {
+    DEVICE_STATUS.write().unwrap().monitor_type = ty;
+    DEVICE_STATUS.write().unwrap().monitor_sync_chains = chains;
 }
 
 pub fn add_upload(n: u64) {
