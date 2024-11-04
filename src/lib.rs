@@ -9,6 +9,7 @@ use std::time::Duration;
 
 lazy_static! {
     static ref DEVICE_STATUS: RwLock<DeviceStatus> = RwLock::new(DeviceStatus::new());
+    static ref DEVICE_TRACE: RwLock<DeviceTrace> = RwLock::new(DeviceTrace::new());
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -42,7 +43,6 @@ struct DeviceStatus {
     uptime: i64,
     monitor_type: u8,
     monitor_sync_chains: Vec<(u32, u32)>,
-    trace_data: String,
 }
 
 impl DeviceStatus {
@@ -53,6 +53,20 @@ impl DeviceStatus {
         device_status
     }
 }
+
+
+#[derive(Serialize, Deserialize, Debug, Clone, Default)]
+pub struct DeviceTrace {
+    device_id: String,
+    trace_data: String,
+}
+
+impl DeviceTrace {
+    fn new() -> Self {
+        Self::default()
+    }
+}
+
 
 async fn update_status(
     client: &Client,
@@ -77,6 +91,29 @@ async fn update_status(
     Ok(())
 }
 
+pub async fn update_trace(
+    client: &Client,
+    url: &str,
+    params: &DeviceTrace,
+) -> Result<(), Box<dyn Error>> {
+    let request = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        method: "update_trace".to_string(),
+        params: json!(params),
+        id: 1,
+    };
+
+    let response: JsonRpcResponse = client.post(url).json(&request).send().await?.json().await?;
+
+    if let Some(result) = response.result {
+        debug!("Response: {:?}", result);
+    } else if let Some(error) = response.error {
+        error!("Error: {:?}", error);
+    }
+
+    Ok(())
+}
+
 #[allow(dead_code)]
 async fn get_status(client: &Client, url: &str) -> Result<(), Box<dyn Error>> {
     let request = JsonRpcRequest {
@@ -84,6 +121,26 @@ async fn get_status(client: &Client, url: &str) -> Result<(), Box<dyn Error>> {
         method: "get_status".to_string(),
         params: serde_json::Value::Null,
         id: 2,
+    };
+
+    let response: JsonRpcResponse = client.post(url).json(&request).send().await?.json().await?;
+
+    if let Some(result) = response.result {
+        info!("Response: {:?}", result);
+    } else if let Some(error) = response.error {
+        error!("Error: {:?}", error);
+    }
+
+    Ok(())
+}
+
+#[allow(dead_code)]
+async fn get_traces(client: &Client, url: &str) -> Result<(), Box<dyn Error>> {
+    let request = JsonRpcRequest {
+        jsonrpc: "2.0".to_string(),
+        method: "get_traces".to_string(),
+        params: serde_json::Value::Null,
+        id: 3,
     };
 
     let response: JsonRpcResponse = client.post(url).json(&request).send().await?.json().await?;
@@ -177,7 +234,7 @@ pub fn set_monitor_sync_status(ty: u8, chains: Vec<(u32, u32)>) {
 }
 
 pub fn set_trace_data(data: String) {
-    DEVICE_STATUS.write().unwrap().trace_data = data;
+    DEVICE_TRACE.write().unwrap().trace_data = data;
 }
 
 pub fn add_upload(n: u64) {
@@ -234,6 +291,14 @@ mod tests {
                     set_peer_id("12D3KooWFUMJVSD2aeNNGPksADzpMjW2MPgaK61cZ31LPpEZenU8".to_string());
                 }
 
+                if i % 10 == 0 {
+                    let random_u128: u128 = random();
+                    let _= update_trace(&client, url, &DeviceTrace {
+                        device_id: format!("0x{:064x}", random_u128),
+                        trace_data: "this is a faked data".to_owned(),
+                    }).await;
+                }
+
                 let random_u128: u128 = random();
                 let device_owner = format!("0x{:040x}", random_u128);
                 set_device_owner(device_owner);
@@ -244,6 +309,7 @@ mod tests {
 
                 // Get data
                 let _ = get_status(&client, url).await;
+                let _ = get_traces(&client, url).await;
             }
         });
     }
