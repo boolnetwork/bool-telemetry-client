@@ -231,6 +231,7 @@ mod tests {
                     let device_id = format!("0x{:064x}", random_u128);
                     set_device_id(device_id);
                     set_device_version("0.11.19".to_string());
+                    set_peer_id("12D3KooWFUMJVSD2aeNNGPksADzpMjW2MPgaK61cZ31LPpEZenU8".to_string());
                 }
 
                 let random_u128: u128 = random();
