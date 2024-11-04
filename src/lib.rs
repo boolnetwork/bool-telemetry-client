@@ -42,6 +42,7 @@ struct DeviceStatus {
     uptime: i64,
     monitor_type: u8,
     monitor_sync_chains: Vec<(u32, u32)>,
+    errors: Vec<u8>,
 }
 
 impl DeviceStatus {
@@ -173,6 +174,10 @@ pub fn set_uptime(uptime: i64) {
 pub fn set_monitor_sync_status(ty: u8, chains: Vec<(u32, u32)>) {
     DEVICE_STATUS.write().unwrap().monitor_type = ty;
     DEVICE_STATUS.write().unwrap().monitor_sync_chains = chains;
+}
+
+pub fn set_errors(errors: Vec<u8>) {
+    DEVICE_STATUS.write().unwrap().errors = errors;
 }
 
 pub fn add_upload(n: u64) {
