@@ -57,8 +57,8 @@ impl DeviceStatus {
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
 pub struct DeviceTrace {
-    device_id: String,
-    trace_data: String,
+    pub device_id: String,
+    pub trace_data: String,
 }
 
 impl DeviceTrace {
