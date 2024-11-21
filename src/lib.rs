@@ -43,6 +43,9 @@ struct DeviceStatus {
     uptime: i64,
     monitor_type: u8,
     monitor_sync_chains: Vec<(u32, u32)>,
+    cpu_cores: i64,
+    cpu_column: String,
+    memory: i64,
 }
 
 impl DeviceStatus {
@@ -231,6 +234,15 @@ pub fn set_uptime(uptime: i64) {
 pub fn set_monitor_sync_status(ty: u8, chains: Vec<(u32, u32)>) {
     DEVICE_STATUS.write().unwrap().monitor_type = ty;
     DEVICE_STATUS.write().unwrap().monitor_sync_chains = chains;
+}
+
+pub fn set_cpu_info(cpu_cores: i64, cpu_column: String) {
+    DEVICE_STATUS.write().unwrap().cpu_cores = cpu_cores;
+    DEVICE_STATUS.write().unwrap().cpu_column = cpu_column;
+}
+
+pub fn set_memory(memory: i64) {
+    DEVICE_STATUS.write().unwrap().memory = memory;
 }
 
 pub fn set_trace_data(data: String) {
