@@ -38,6 +38,7 @@ struct DeviceStatus {
     peers_count: u32,
     best_block_number: u32,
     finalized_block_number: u32,
+    handled_block_number: u32,
     upload_bandwidth: Vec<u64>,
     download_bandwidth: Vec<u64>,
     uptime: i64,
@@ -225,6 +226,10 @@ pub fn set_best_block_number(block_number: u32) {
 
 pub fn set_finalized_block_number(block_number: u32) {
     DEVICE_STATUS.write().unwrap().finalized_block_number = block_number;
+}
+
+pub fn set_handled_block_number(block_number: u32) {
+    DEVICE_STATUS.write().unwrap().handled_block_number = block_number;
 }
 
 pub fn set_uptime(uptime: i64) {
