@@ -8,8 +8,8 @@ use std::sync::RwLock;
 use std::time::Duration;
 
 lazy_static! {
-    static ref DEVICE_STATUS: RwLock<DeviceStatus> = RwLock::new(DeviceStatus::new());
-    static ref DEVICE_TRACE: RwLock<DeviceTrace> = RwLock::new(DeviceTrace::new());
+    pub static ref DEVICE_STATUS: RwLock<DeviceStatus> = RwLock::new(DeviceStatus::new());
+    pub static ref DEVICE_TRACE: RwLock<DeviceTrace> = RwLock::new(DeviceTrace::new());
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -29,24 +29,24 @@ struct JsonRpcResponse {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, Default)]
-struct DeviceStatus {
-    device_id: String,
-    device_owner: String,
-    device_version: String,
-    peer_id: String,
+pub struct DeviceStatus {
+    pub device_id: String,
+    pub device_owner: String,
+    pub device_version: String,
+    pub peer_id: String,
     #[serde(default)]
-    peers_count: u32,
-    best_block_number: u32,
-    finalized_block_number: u32,
-    handled_block_number: u32,
-    upload_bandwidth: Vec<u64>,
-    download_bandwidth: Vec<u64>,
-    uptime: i64,
-    monitor_type: u8,
-    monitor_sync_chains: Vec<(u32, u32)>,
-    cpu_cores: i64,
-    cpu_column: String,
-    memory: i64,
+    pub peers_count: u32,
+    pub best_block_number: u32,
+    pub finalized_block_number: u32,
+    pub handled_block_number: u32,
+    pub upload_bandwidth: Vec<u64>,
+    pub download_bandwidth: Vec<u64>,
+    pub uptime: i64,
+    pub monitor_type: u8,
+    pub monitor_sync_chains: Vec<(u32, u32)>,
+    pub cpu_cores: i64,
+    pub cpu_column: String,
+    pub memory: i64,
 }
 
 impl DeviceStatus {
